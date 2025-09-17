@@ -1,0 +1,107 @@
+graph TB
+  %% ======================
+  %% CI/CD
+  %% ======================
+  subgraph "CI/CD"
+    CB[AWS CodeBuild]
+    CP[AWS CodePipeline]
+  end
+
+  %% ======================
+  %% Clientes
+  %% ======================
+  subgraph "Clientes"
+    WA[Web App - React]
+    AA[Android App Kotlin]
+    IA[iOS App - Swift]
+  end
+
+  CB --> CP
+  CP --> ECS
+  WA & AA & IA --> ELB
+
+  %% ======================
+  %% Entrada e Segurança
+  %% ======================
+  subgraph "Entrada e Segurança"
+    ELB[TODO: ELB (Load Balancer) ou API Gateway]
+    GC[Cognito Auth]
+  end
+
+  ELB --> GC
+  ELB --> ECSAPI
+
+  %% ======================
+  %% ECS Fargate Cluster
+  %% ======================
+  subgraph "ECS Fargate Cluster"
+    ECSAPI[API Service]
+    DS[Doc Service]
+    VS[Video Generation Service]
+    TS[Transcription Service]
+    IS[Stream Service]
+    RS[Reporting Service]
+  end
+
+  GC --> ECSAPI
+  ECSAPI --> DS
+  ECSAPI --> VS
+  ECSAPI --> TS
+  ECSAPI --> IS
+  ECSAPI --> RS
+
+  %% ======================
+  %% Comunicação em Tempo Real
+  %% ======================
+  subgraph "Comunicação em Tempo Real"
+    P5
+    D5
+    S5
+    SS
+    RS
+  end
+
+  %% ======================
+  %% Observabilidade
+  %% ======================
+  subgraph "Observabilidade"
+    CW[CloudWatch]
+    GD[Grafana Dashboard]
+  end
+
+  P5 & D5 & S5 & SS & RS --> CW
+
+  %% ======================
+  %% Data Stores
+  %% ======================
+  subgraph "Data Stores"
+    AURPOC[Aurora RDS - POCs]
+    AUPQC
+    OSS[OpenSearch Service]
+    S3[Amazon S3]
+  end
+
+  DS --> AURPOC
+  VS --> AUPQC
+  RS --> AUPQC
+  P5 --> OSS
+  SS --> OSS
+  VS --> S3
+
+  %% ======================
+  %% Multi-Tenancy
+  %% ======================
+  subgraph "Multi-Tenancy (Schema Level)"
+    AUPQC --> CH1[Tenant 1 Schema]
+    AUPQC --> CH2[Tenant 2 Schema]
+    AUPQC --> CH3[Tenant N Schema]
+  end
+
+  %% ======================
+  %% Multi-AZ Deployment
+  %% ======================
+  subgraph "Multi-AZ Deployment"
+    AZ1 --- AZ2
+    AZ2 --- AZ3
+    AZ3 --- AZ1
+  end
