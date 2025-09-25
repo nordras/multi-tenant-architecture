@@ -1,1 +1,279 @@
-graph TB subgraph "CI/CD" CB[AWS CodeBuild] CP[AWS CodePipeline] end subgraph "Clientes" WA[Web App - React] AA[Android App - Kotlin] IA[iOS App - Swift] end CB --> CP CP --> ECS WA & AA & IA --> ELB subgraph "Entrada e Segurança" ELB[TODO - ELB Load Balancer ou API Gateway] ELB --> CG[Cognito Auth] ELB --> ECSAPI end subgraph "ECS Fargate Cluster" ECSAPI[API Service] CG --> ECSAPI ECSAPI --> PS[POC Service] ECSAPI --> DS[Dojo Service] ECSAPI --> VS[Video Generation Service] ECSAPI --> SS[Search Service] ECSAPI --> TS[Tenant Service] ECSAPI --> RS[Reporting Service] end subgraph "Comunicação em Tempo Real" DS --> CH[Amazon Chime] end subgraph "Observabilidade" PS & DS & VS & SS & TS & RS --> CW[CloudWatch] CW --> GD[Grafana Dashboard] end subgraph "Data Stores" PS --> AUPOC[Aurora RDS - POCs] DS --> AUPOC TS --> AUPOC VS --> AUPOC RS --> AUPOC PS & SS --> OSS[OpenSearch Service] VS --> S3[Amazon S3] end subgraph "Multi-Tenancy (Schema Level)" AUPOC --> SCH1[Tenant 1 Schema] AUPOC --> SCH2[Tenant 2 Schema] AUPOC --> SCH3[Tenant N Schema] end subgraph "Multi-AZ Deployment" AZ1[AZ-1] AZ2[AZ-2] AZ3[AZ-3] AZ1 --- AZ2 AZ2 --- AZ3 end
+graph TB
+    %% Multi-AZ Deployment Layer
+    subgraph "AWS Multi A-Z"
+        subgraph AZ1["Availability Zone 1"]
+            AZ1_LABEL[AZ-1]
+        end
+        subgraph AZ2["Availability Zone 2"]
+            AZ2_LABEL[AZ-2]
+        end
+        subgraph AZ3["Availability Zone 3"]
+            AZ3_LABEL[AZ-3]
+        end
+    end
+
+    %% Client Applications
+    subgraph "Clientes"
+        IOS[iOS]
+        ANDROID[Android]
+        BACKOFFICE[BackOffice]
+        WEBAPP[Web App - React]
+    end
+
+    %% CI/CD Pipeline
+    subgraph "Deployment"
+        subgraph "AWS Pipeline"
+            CODECOMMIT[AWS CodeCommit]
+            CODEBUILD[AWS CodeBuild]
+            CODEDEPLOY[AWS Code Deploy]
+            PIPELINE[Pipeline]
+        end
+    end
+
+    %% Load Balancer and Security
+    subgraph "Entrada e Segurança"
+        WAF[WAF Security Layer]
+        ALB[ALB - Application Load Balancer]
+        COGNITO[Cognito Auth]
+        
+        subgraph "Load Balancer Scaling"
+            ALB_AUTOSCALING[ALB Auto Scaling<br/>Multiple AZ]
+        end
+    end
+
+    %% Namespace and Service Discovery
+    subgraph "Namespace"
+        NAMESPACE[Java.com<br/>Namespace KMS.com]
+    end
+
+    %% ECS Fargate Cluster
+    subgraph "ECS Fargate Cluster"
+        APISERVICE[API Service]
+        SEARCHSERVICE[Search Service]
+        DOCSERVICE[POC Service]
+        VIDEOSERVICE[Video Service]
+        TENANTSERVICE[Tenant Service]
+        REPORTINGSERVICE[Reporting Service]
+        
+        subgraph "Auto Scaling"
+            ECS_AUTOSCALING[ECS Auto Scaling<br/>Target Tracking]
+            ALB_SCALING[ALB Target Groups<br/>Health Checks]
+        end
+    end
+
+    %% Communication Services
+    subgraph "Comunicação em Tempo Real"
+        CHIME[Amazon Chime]
+    end
+
+    %% Data Layer
+    subgraph "Data Stores"
+        subgraph "Cache & Search"
+            ELASTICACHE[ElastiCache]
+            OPENSEARCH[OpenSearch]
+            AURORA[AURORA]
+        end
+        
+        subgraph "Storage"
+            RDS[RDS]
+            S3[Amazon S3]
+        end
+        
+        subgraph "Intelligence & Analytics"
+            RDSINTELL[RDS Intelligence]
+        end
+        
+        subgraph "Database Auto Scaling"
+            RDS_AUTOSCALING[RDS Auto Scaling<br/>Read Replicas]
+            AURORA_AUTOSCALING[Aurora Serverless<br/>Auto Scaling]
+        end
+    end
+
+    %% Observability
+    subgraph "Observabilidade"
+        CLOUDWATCH[CloudWatch]
+        GRAFANA[Grafana]
+    end
+
+    %% Streaming
+    subgraph "Streaming"
+        CHIMESTREAM[AWS Chime]
+    end
+
+    %% Multi-Tenancy Schema Level
+    subgraph "Multi-Tenancy (Schema Level)"
+        TENANT1[Tenant A<br/>Isolate Schema A]
+        TENANT2[Tenant B<br/>Isolate Schema B]
+        TENANT3[Tenant N<br/>Isolate Schema C]
+    end
+
+    %% Client Connections
+    IOS -.-> WAF
+    ANDROID -.-> WAF
+    BACKOFFICE -.-> WAF
+    WEBAPP -.-> WAF
+
+    %% Security Flow
+    WAF ==> ALB
+    ALB ==> COGNITO
+    COGNITO ==> APISERVICE
+
+    %% CI/CD Flow
+    CODECOMMIT --> CODEBUILD
+    CODEBUILD --> PIPELINE
+    PIPELINE --> CODEDEPLOY
+    CODEDEPLOY -.-> APISERVICE
+
+    %% Service Mesh
+    APISERVICE --> SEARCHSERVICE
+    APISERVICE --> DOCSERVICE
+    APISERVICE --> VIDEOSERVICE
+    APISERVICE --> TENANTSERVICE
+    APISERVICE --> REPORTINGSERVICE
+
+    %% Auto Scaling Connections
+    ECS_AUTOSCALING -.-> APISERVICE
+    ECS_AUTOSCALING -.-> SEARCHSERVICE
+    ECS_AUTOSCALING -.-> DOCSERVICE
+    ECS_AUTOSCALING -.-> VIDEOSERVICE
+    ECS_AUTOSCALING -.-> TENANTSERVICE
+    ECS_AUTOSCALING -.-> REPORTINGSERVICE
+    
+    ALB_SCALING -.-> ECS_AUTOSCALING
+    ALB --> ALB_AUTOSCALING
+    ALB_AUTOSCALING -.-> ALB_SCALING
+
+    %% Service Discovery
+    NAMESPACE -.-> APISERVICE
+    NAMESPACE -.-> SEARCHSERVICE
+    NAMESPACE -.-> DOCSERVICE
+
+    %% Real-time Communication
+    DOCSERVICE ==> CHIME
+    VIDEOSERVICE ==> CHIMESTREAM
+
+    %% Data Connections
+    ELASTICACHE ==> RDS
+    OPENSEARCH ==> RDS
+    AURORA ==> RDS
+
+    SEARCHSERVICE ==> OPENSEARCH
+    DOCSERVICE ==> AURORA
+    VIDEOSERVICE ==> S3
+    TENANTSERVICE ==> RDS
+    REPORTINGSERVICE ==> RDSINTELL
+
+    %% Database Auto Scaling Connections
+    RDS --> RDS_AUTOSCALING
+    AURORA --> AURORA_AUTOSCALING
+    RDS_AUTOSCALING -.-> RDS
+    AURORA_AUTOSCALING -.-> AURORA
+
+    %% Multi-tenancy
+    RDS ==> TENANT1
+    RDS ==> TENANT2
+    RDS ==> TENANT3
+
+    %% Observability
+    APISERVICE -.-> CLOUDWATCH
+    SEARCHSERVICE -.-> CLOUDWATCH
+    DOCSERVICE -.-> CLOUDWATCH
+    VIDEOSERVICE -.-> CLOUDWATCH
+    TENANTSERVICE -.-> CLOUDWATCH
+    REPORTINGSERVICE -.-> CLOUDWATCH
+    
+    CLOUDWATCH --> GRAFANA
+
+    %% Styling
+    classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef securityStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef serviceStyle fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef dataStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef observeStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef cicdStyle fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef tenantStyle fill:#fff8e1,stroke:#ff8f00,stroke-width:2px
+    classDef scalingStyle fill:#f1f8e9,stroke:#2e7d32,stroke-width:3px,stroke-dasharray: 5 5
+
+    class IOS,ANDROID,BACKOFFICE,WEBAPP clientStyle
+    class WAF,ALB,COGNITO securityStyle
+    class APISERVICE,SEARCHSERVICE,DOCSERVICE,VIDEOSERVICE,TENANTSERVICE,REPORTINGSERVICE serviceStyle
+    class ELASTICACHE,OPENSEARCH,AURORA,RDS,S3,RDSINTELL dataStyle
+    class CLOUDWATCH,GRAFANA observeStyle
+    class CODECOMMIT,CODEBUILD,CODEDEPLOY,PIPELINE cicdStyle
+    class TENANT1,TENANT2,TENANT3 tenantStyle
+    class ECS_AUTOSCALING,ALB_SCALING,ALB_AUTOSCALING,RDS_AUTOSCALING,AURORA_AUTOSCALING scalingStyle
+
+    %% Link Styles (Colored Arrows)
+    %% Client to Security (Blue to Orange)
+    linkStyle 0 stroke:#1976d2,stroke-width:3px
+    linkStyle 1 stroke:#1976d2,stroke-width:3px
+    linkStyle 2 stroke:#1976d2,stroke-width:3px
+    linkStyle 3 stroke:#1976d2,stroke-width:3px
+    
+    %% Security Flow (Orange)
+    linkStyle 4 stroke:#f57c00,stroke-width:4px
+    linkStyle 5 stroke:#f57c00,stroke-width:4px
+    linkStyle 6 stroke:#f57c00,stroke-width:4px
+    
+    %% CI/CD Flow (Teal)
+    linkStyle 7 stroke:#00695c,stroke-width:3px
+    linkStyle 8 stroke:#00695c,stroke-width:3px
+    linkStyle 9 stroke:#00695c,stroke-width:3px
+    linkStyle 10 stroke:#00695c,stroke-width:3px
+    
+    %% Service Mesh (Green)
+    linkStyle 11 stroke:#388e3c,stroke-width:3px
+    linkStyle 12 stroke:#388e3c,stroke-width:3px
+    linkStyle 13 stroke:#388e3c,stroke-width:3px
+    linkStyle 14 stroke:#388e3c,stroke-width:3px
+    linkStyle 15 stroke:#388e3c,stroke-width:3px
+    
+    %% Auto Scaling Connections (Light Green)
+    linkStyle 16 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    linkStyle 17 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    linkStyle 18 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    linkStyle 19 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    linkStyle 20 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    linkStyle 21 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    linkStyle 22 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    linkStyle 23 stroke:#2e7d32,stroke-width:3px
+    linkStyle 24 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    
+    %% Service Discovery (Gray)
+    linkStyle 25 stroke:#666,stroke-width:2px
+    linkStyle 26 stroke:#666,stroke-width:2px
+    linkStyle 27 stroke:#666,stroke-width:2px
+    
+    %% Real-time Communication (Purple)
+    linkStyle 28 stroke:#7b1fa2,stroke-width:3px
+    linkStyle 29 stroke:#7b1fa2,stroke-width:3px
+    
+    %% Data Connections (Pink)
+    linkStyle 30 stroke:#c2185b,stroke-width:4px
+    linkStyle 31 stroke:#c2185b,stroke-width:4px
+    linkStyle 32 stroke:#c2185b,stroke-width:4px
+    linkStyle 33 stroke:#c2185b,stroke-width:3px
+    linkStyle 34 stroke:#c2185b,stroke-width:3px
+    linkStyle 35 stroke:#c2185b,stroke-width:3px
+    linkStyle 36 stroke:#c2185b,stroke-width:3px
+    linkStyle 37 stroke:#c2185b,stroke-width:3px
+    
+    %% Database Auto Scaling (Green)
+    linkStyle 38 stroke:#2e7d32,stroke-width:3px
+    linkStyle 39 stroke:#2e7d32,stroke-width:3px
+    linkStyle 40 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    linkStyle 41 stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 3 3
+    
+    %% Multi-tenancy (Orange)
+    linkStyle 42 stroke:#ff8f00,stroke-width:4px
+    linkStyle 43 stroke:#ff8f00,stroke-width:4px
+    linkStyle 44 stroke:#ff8f00,stroke-width:4px
+    
+    %% Observability (Purple)
+    linkStyle 45 stroke:#7b1fa2,stroke-width:2px
+    linkStyle 46 stroke:#7b1fa2,stroke-width:2px
+    linkStyle 47 stroke:#7b1fa2,stroke-width:2px
+    linkStyle 48 stroke:#7b1fa2,stroke-width:2px
+    linkStyle 49 stroke:#7b1fa2,stroke-width:2px
+    linkStyle 50 stroke:#7b1fa2,stroke-width:2px
+    linkStyle 51 stroke:#7b1fa2,stroke-width:3px
