@@ -4,8 +4,10 @@ Uma arquitetura multi-tenant escalável usando AWS com isolamento por schema.
 
 ## 📋 Documentação
 
-- [🏗️ Diagrama da Arquitetura](./architecture.mermaid)
+- [🏗️ Diagrama da Arquitetura](./arquitecture.mmd)
 - [📊 Análise Detalhada](./architecture-analysis.md)
+- [🚀 Auto Scaling](./autoscaling-analysis.md)
+- [⚙️ Definições dos Serviços AWS](./definicoes.md)
 
 ## 🎯 Características Principais
 
@@ -23,7 +25,7 @@ Uma arquitetura multi-tenant escalável usando AWS com isolamento por schema.
 
 ### Backend
 - **Load Balancer**: ALB (Application Load Balancer)
-- **Authentication**: Amazon Cognito
+- **Authentication**: AWS IAM Identity Center (SSO)
 - **Container Orchestration**: ECS Fargate
 - **Microservices**: API, Doc, Video, Transcription, Stream, Reporting
 

@@ -34,7 +34,7 @@ graph TB
     subgraph "Entrada e Segurança"
         WAF[WAF Security Layer]
         ALB[ALB - Application Load Balancer]
-        COGNITO[Cognito Auth]
+        IAM_IDENTITY[AWS IAM Identity Center]
         
         subgraph "Load Balancer Scaling"
             ALB_AUTOSCALING[ALB Auto Scaling<br/>Multiple AZ]
@@ -115,8 +115,8 @@ graph TB
 
     %% Security Flow
     WAF ==> ALB
-    ALB ==> COGNITO
-    COGNITO ==> APISERVICE
+    ALB ==> IAM_IDENTITY
+    IAM_IDENTITY ==> APISERVICE
 
     %% CI/CD Flow
     CODECOMMIT --> CODEBUILD
